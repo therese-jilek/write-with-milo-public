@@ -1,0 +1,15 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+.next/
+node_modules/
+*.log
+*.tmp
+*.bak
+*.tsbuildinfo
+.vercel/
+artifacts/
+output/
+tmp/
+review-artifacts/
