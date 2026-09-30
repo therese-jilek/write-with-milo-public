@@ -473,6 +473,16 @@ textarea:focus-visible {
   padding-top: 10px;
 }
 
+.public-sr-only {
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
 .public-writing-card > textarea {
   background: #fff8e8;
   border: 1px solid #d4c4a1;
@@ -574,6 +584,46 @@ textarea:focus-visible {
   margin-top: 8px;
 }
 
+.public-support-demo.is-sentence-starter {
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+
+.public-starter-card {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid rgba(78, 42, 162, 0.22);
+  border-radius: var(--radius-md);
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  margin-top: 14px;
+  min-height: 88px;
+  padding: 14px;
+}
+
+.public-starter-card p {
+  color: #0b0a32;
+  font-size: 19px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.public-add-starter {
+  background: #f0e8f8;
+  border: 1px solid rgba(78, 42, 162, 0.22);
+  border-radius: var(--radius-pill);
+  color: #4e2aa2;
+  cursor: pointer;
+  display: block;
+  font: inherit;
+  font-weight: 800;
+  margin: 12px 0 0 auto;
+  min-height: 44px;
+  padding: 8px 18px;
+}
+
 .public-progress {
   border-top: 1px solid rgba(78, 42, 162, 0.18);
   min-height: 132px;
@@ -617,16 +667,6 @@ textarea:focus-visible {
 .public-progress-track span.is-complete {
   border-color: #4e2aa2;
   color: #4e2aa2;
-}
-
-.public-progress > strong {
-  font-size: 17px;
-}
-
-.public-progress > p {
-  color: #625d6b;
-  font-size: 14px;
-  margin-top: 3px;
 }
 
 .public-review-card {

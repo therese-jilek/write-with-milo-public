@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { CopyWritingButton } from "./CopyWritingButton";
 import { PromptReadAloudButton } from "./PromptReadAloudButton";
 import { assembleDraftEssay } from "../utils/essay-assembly";
@@ -18,6 +18,7 @@ type WritingPhase = "outline" | "draft" | "review";
 type SupportTool = "default" | "ideas" | "starter" | "picture";
 
 const DEFAULT_PROMPT = "Explain something you know well and why it matters.";
+const PUBLIC_SENTENCE_STARTER = "One reason is";
 
 export function PublicMiloWorkspace() {
   const [view, setView] = useState<PublicView>("teacher");
@@ -30,6 +31,7 @@ export function PublicMiloWorkspace() {
   const [draftValues, setDraftValues] = useState<Record<string, string>>({});
   const [supportTool, setSupportTool] = useState<SupportTool>("default");
   const [readAloudMessage, setReadAloudMessage] = useState("");
+  const writingFieldRef = useRef<HTMLTextAreaElement>(null);
 
   const sections = useMemo(
     () => writingSectionsForStructure(writingStructure),
@@ -37,6 +39,8 @@ export function PublicMiloWorkspace() {
   );
   const activeSection = sections[Math.min(sectionIndex, sections.length - 1)];
   const activeValues = phase === "outline" ? outlineValues : draftValues;
+  const activeWriting = activeSection ? activeValues[activeSection.id] || "" : "";
+  const sentenceStarterAvailable = phase === "draft" && activeWriting.trim().length === 0;
   const assembledDraft = assembleDraftEssay(writingStructure, sections, draftValues);
 
   function chooseWritingType(value: WritingTypeOption) {
@@ -59,6 +63,19 @@ export function PublicMiloWorkspace() {
     if (!activeSection) return;
     const setter = phase === "outline" ? setOutlineValues : setDraftValues;
     setter((current) => ({ ...current, [activeSection.id]: value }));
+  }
+
+  function addPublicSentenceStarter() {
+    if (!sentenceStarterAvailable) return;
+    updateWriting(`${PUBLIC_SENTENCE_STARTER} `);
+    setSupportTool("default");
+    window.requestAnimationFrame(() => {
+      const field = writingFieldRef.current;
+      if (!field) return;
+      const caret = PUBLIC_SENTENCE_STARTER.length + 1;
+      field.focus();
+      field.setSelectionRange(caret, caret);
+    });
   }
 
   function openStudentView() {
@@ -204,13 +221,13 @@ export function PublicMiloWorkspace() {
                       <p className="public-eyebrow">{phase === "outline" ? "Outline" : "Draft"}</p>
                       <h1>{activeSection?.label || "Writing"}</h1>
                     </div>
-                    <span>{sectionIndex + 1} of {sections.length}</span>
                   </div>
                   <textarea
                     aria-label={`${activeSection?.label || "Writing"} ${phase}`}
                     onChange={(event) => updateWriting(event.target.value)}
                     placeholder={activeSection?.placeholder}
-                    value={activeSection ? activeValues[activeSection.id] || "" : ""}
+                    ref={writingFieldRef}
+                    value={activeWriting}
                   />
                   <div className="public-writing-navigation">
                     <button
@@ -245,41 +262,60 @@ export function PublicMiloWorkspace() {
                         <button onClick={() => setSupportTool("ideas")} type="button">
                           <strong>Find an idea</strong><span>Use a question to think about this section.</span>
                         </button>
-                        <button onClick={() => setSupportTool("starter")} type="button">
-                          <strong>Sentence starter</strong><span>Choose whether a starter helps you begin.</span>
-                        </button>
+                        {phase === "draft" ? (
+                          <button onClick={() => setSupportTool("starter")} type="button">
+                            <strong>Sentence starter</strong><span>Start a sentence</span>
+                          </button>
+                        ) : null}
                         <button onClick={() => setSupportTool("picture")} type="button">
                           <strong>Create a picture</strong><span>Use a visual as a writing reference.</span>
                         </button>
                       </div>
                     ) : (
-                      <div className="public-support-demo">
+                      <div className={`public-support-demo${supportTool === "starter" ? " is-sentence-starter" : ""}`}>
                         <h3>{supportTool === "ideas" ? "Find an idea" : supportTool === "starter" ? "Sentence starter" : "Create a picture"}</h3>
-                        <p>
-                          {supportTool === "ideas"
-                            ? "This public view shows the interaction shell without Milo's private question library."
-                            : supportTool === "starter"
-                              ? "This public view omits Milo's private sentence-starter library."
+                        {supportTool === "starter" ? (
+                          <>
+                            <div className="public-starter-card">
+                              <p>{PUBLIC_SENTENCE_STARTER}</p>
+                              <PromptReadAloudButton
+                                onReadAloudMessage={setReadAloudMessage}
+                                promptText={PUBLIC_SENTENCE_STARTER}
+                              />
+                            </div>
+                            {sentenceStarterAvailable ? (
+                              <button className="public-add-starter" onClick={addPublicSentenceStarter} type="button">
+                                + Add
+                              </button>
+                            ) : null}
+                          </>
+                        ) : (
+                          <p>
+                            {supportTool === "ideas"
+                              ? "This public view shows the interaction shell without Milo's private question library."
                               : "Provider requests and safety controls are intentionally not included in this public repository."}
-                        </p>
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>
                   <div className="public-progress">
                     <h3>{phase === "outline" ? "Outline progress" : "Draft progress"}</h3>
-                    <div aria-label="Section progress" className="public-progress-track">
+                    <div aria-label="Section progress" className="public-progress-track" role="list">
                       {sections.map((section, index) => (
                         <span
                           aria-label={`${section.label}, ${index < sectionIndex ? "complete" : index === sectionIndex ? "current" : "not started"}`}
                           className={index < sectionIndex ? "is-complete" : index === sectionIndex ? "is-current" : ""}
                           key={section.id}
+                          role="listitem"
                         >
                           {index < sectionIndex ? "\u2713" : index + 1}
                         </span>
                       ))}
                     </div>
-                    <strong>{activeSection?.label} - Now</strong>
-                    <p>{sectionIndex + 1} of {sections.length} sections</p>
+                    <p className="public-sr-only">
+                      Current section: {activeSection?.label}. Section {sectionIndex + 1} of {sections.length}.
+                    </p>
                   </div>
                 </aside>
               </div>
